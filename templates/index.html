@@ -1,1 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Evaluator</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            resize: vertical;
+            min-height: 120px;
+            font-size: 0.95rem;
+        }
+
+        /* File Upload Styling */
+        .file-upload-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100px;
+            border: 2px dashed #d1d5db;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .file-upload-wrapper:hover {
+            border-color: var(--primary);
+            background-color: #f9fafb;
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-text {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        #file-name {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:disabled {
+            background-color: #a5b4fc;
+            cursor: not-allowed;
+        }
+
+        /* Results Section */
+        #results-area {
+            display: none; /* Hidden by default */
+            margin-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 2rem;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .score-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #e0e7ff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .score-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feedback-box h3 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 2px solid #eee;
+        }
+
+        .feedback-box ul {
+            list-style-type: none;
+        }
+
+        .feedback-box li {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            position: relative;
+            padding-left: 1.2rem;
+        }
+
+        .feedback-box li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .missing-keywords li { color: var(--danger); }
+        .strengths li { color: var(--success); }
+
+        .verdict-box {
+            background: #f9fafb;
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid var(--text-muted);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #ffffff;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .feedback-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>AI Resume Evaluator</h1>
+            <p>Upload your resume and paste the job description to get an instant match score.</p>
+        </header>
+
+        <div class="input-group">
+            <label for="job-description">Job Description</label>
+            <textarea id="job-description" placeholder="Paste the Job Description (JD) here..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label>Resume Upload (PDF/Text)</label>
+            <div class="file-upload-wrapper">
+                <input type="file" id="resume-file" accept=".pdf,.doc,.docx,.txt">
+                <span class="file-upload-text">Drag & drop or click to upload</span>
+            </div>
+            <div id="file-name"></div>
+        </div>
+
+        <button id="analyze-btn" onclick="analyzeResume()">
+            <span id="btn-text">Analyze Resume</span>
+            <div class="spinner" id="btn-spinner"></div>
+        </button>
+
+        <div id="results-area">
+            <div class="score-card">
+                <div class="score-title">ATS Match Score</div>
+                <div class="score-value" id="score-display">0%</div>
+            </div>
+
+            <div class="feedback-grid">
+                <div class="feedback-box">
+                    <h3>❌ Missing Keywords</h3>
+                    <ul id="missing-keywords-list" class="missing-keywords">
+                        </ul>
+                </div>
+                <div class="feedback-box">
+                    <h3>✅ Strengths</h3>
+                    <ul id="strengths-list" class="strengths">
+                        </ul>
+                </div>
+            </div>
+
+            <div class="verdict-box">
+                <strong>Final Verdict:</strong> <span id="verdict-text"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Handle File Selection Display
+        const fileInput = document.getElementById('resume-file');
+        const fileNameDisplay = document.getElementById('file-name');
+
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                fileNameDisplay.textContent = "Selected: " + this.files[0].name;
+            } else {
+                fileNameDisplay.textContent = "";
+            }
+        });
+
+        // 2. Main Analysis Function
+        async function analyzeResume() {
+            const jdText = document.getElementById('job-description').value;
+            const file = fileInput.files[0];
+            const btn = document.getElementById('analyze-btn');
+            const btnText = document.getElementById('btn-text');
+            const spinner = document.getElementById('btn-spinner');
+            const resultsArea = document.getElementById('results-area');
+
+            // Validation
+            if (!jdText || !file) {
+                alert("Please provide both a Job Description and a Resume file.");
+                return;
+            }
+
+            // UI Loading State
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            spinner.style.display = 'block';
+            resultsArea.style.display = 'none';
+
+            // Prepare data for backend
+            const formData = new FormData();
+            formData.append('jd', jdText);
+            formData.append('resume', file);
+
+            try {
+                // CALL THE PYTHON BACKEND
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    displayResults(data);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert("An error occurred while analyzing the resume.");
+            } finally {
+                // Reset Button State
+                btn.disabled = false;
+                btnText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        }
+
+        // 3. Render Data to HTML
+        function displayResults(data) {
+            const resultsArea = document.getElementById('results-area');
+            const scoreDisplay = document.getElementById('score-display');
+            const missingList = document.getElementById('missing-keywords-list');
+            const strengthsList = document.getElementById('strengths-list');
+            const verdictText = document.getElementById('verdict-text');
+
+            // Show Section
+            resultsArea.style.display = 'block';
+
+            // Update Score
+            scoreDisplay.innerText = `${data.match_percentage}%`;
+
+            // Helper to populate lists
+            const populateList = (element, items) => {
+                element.innerHTML = ""; // Clear old items
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    element.appendChild(li);
+                });
+            };
+
+            populateList(missingList, data.missing_keywords);
+            populateList(strengthsList, data.strengths);
+            
+            verdictText.textContent = data.final_verdict;
+        }
+    </script>
+</body>
+</html>
