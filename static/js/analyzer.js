@@ -344,9 +344,9 @@ function setLink(element, href) {
 }
 
 function getScoreColor(score) {
-    if (score >= 75) return "#047857";
-    if (score >= 50) return "#b45309";
-    return "#dc2626";
+    if (score >= 75) return "#10b981";
+    if (score >= 50) return "#f59e0b";
+    return "#ef4444";
 }
 
 function clamp(value, min, max) {

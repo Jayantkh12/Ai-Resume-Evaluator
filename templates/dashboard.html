@@ -18,18 +18,22 @@
     <div class="metric-card">
         <span>Total Reports</span>
         <strong>{{ dashboard_data["total_reports"] }}</strong>
+        <div class="metric-progress"><span style="width: 100%"></span></div>
     </div>
     <div class="metric-card">
         <span>Average Score</span>
         <strong>{{ dashboard_data["average_score"] }}%</strong>
+        <div class="metric-progress"><span style="width: {{ dashboard_data['average_score'] }}%"></span></div>
     </div>
     <div class="metric-card">
         <span>Best Score</span>
         <strong>{{ dashboard_data["best_score"] }}%</strong>
+        <div class="metric-progress"><span style="width: {{ dashboard_data['best_score'] }}%"></span></div>
     </div>
     <div class="metric-card">
         <span>Saved Resumes</span>
         <strong>{{ dashboard_data["total_resumes"] }}</strong>
+        <div class="metric-progress"><span style="width: 100%"></span></div>
     </div>
 </section>
 
