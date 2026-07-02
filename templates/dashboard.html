@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | AI Resume Evaluator{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow">Analytics</p>
+        <h1>Resume Dashboard</h1>
+    </div>
+    <a class="primary-button fit" href="{{ url_for('home') }}">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        New Analysis
+    </a>
+</header>
+
+<section class="metric-grid dashboard-metrics">
+    <div class="metric-card">
+        <span>Total Reports</span>
+        <strong>{{ dashboard_data["total_reports"] }}</strong>
+    </div>
+    <div class="metric-card">
+        <span>Average Score</span>
+        <strong>{{ dashboard_data["average_score"] }}%</strong>
+    </div>
+    <div class="metric-card">
+        <span>Best Score</span>
+        <strong>{{ dashboard_data["best_score"] }}%</strong>
+    </div>
+    <div class="metric-card">
+        <span>Saved Resumes</span>
+        <strong>{{ dashboard_data["total_resumes"] }}</strong>
+    </div>
+</section>
+
+<section class="panel compact resume-library-panel">
+    <div class="section-heading">
+        <div>
+            <h2>Resume Library</h2>
+            <span>Upload multiple resumes together or add one later.</span>
+        </div>
+        <button class="secondary-button fit" type="submit" form="resume-compare-form">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 5h10M7 12h10M7 19h10M4 5h.01M4 12h.01M4 19h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Compare Selected
+        </button>
+    </div>
+
+    <form class="library-upload-form" method="post" action="{{ url_for('upload_resumes') }}" enctype="multipart/form-data">
+        <label class="dropzone library-dropzone" data-file-dropzone for="library-resumes">
+            <input type="file" id="library-resumes" name="resumes" accept=".pdf,.docx,.txt,application/pdf" multiple />
+            <span class="dropzone-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0 4 4m-4-4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 16.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <span>
+                <strong data-file-name>Drop resumes here</strong>
+                <small>Select or drag multiple PDF/DOCX/TXT files.</small>
+            </span>
+        </label>
+        <button class="primary-button fit" type="submit">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Upload Resumes
+        </button>
+    </form>
+
+    <form id="resume-compare-form" method="get" action="{{ url_for('compare') }}"></form>
+    <div class="table-wrap resume-table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Compare</th>
+                    <th>Resume Name</th>
+                    <th>Upload Date</th>
+                    <th>Resume Score</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for resume in resumes %}
+                    <tr>
+                        <td>
+                            <input class="compare-checkbox" form="resume-compare-form" type="checkbox" name="resume_ids" value="{{ resume['id'] }}" aria-label="Compare {{ resume['resume_name'] }}" />
+                        </td>
+                        <td>{{ resume["resume_name"] }}</td>
+                        <td>{{ resume["uploaded_label"] }}</td>
+                        <td><span class="mini-score">{{ resume["score_label"] }}</span></td>
+                        <td><span class="status-pill-table">{{ resume["status"] }}</span></td>
+                        <td class="actions-cell">
+                            {% if resume["latest_report_id"] %}
+                                <a href="{{ url_for('home', report_id=resume['latest_report_id']) }}">View Report</a>
+                            {% else %}
+                                <a href="{{ url_for('compare', resume_ids=resume['id']) }}">Analyze</a>
+                            {% endif %}
+                            <button class="link-danger" type="submit" form="delete-resume-{{ resume['id'] }}">Delete</button>
+                            <form id="delete-resume-{{ resume['id'] }}" method="post" action="{{ url_for('delete_resume', resume_id=resume['id']) }}" onsubmit="return confirm('Delete this resume and its saved reports?')"></form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="muted">No resumes uploaded yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="dashboard-grid">
+    <article class="panel compact chart-panel">
+        <div class="section-heading">
+            <h2>Score History</h2>
+            <span>{{ dashboard_data["score_history"]|length }} points</span>
+        </div>
+        <div class="chart-box">
+            <canvas id="scoreChart"></canvas>
+            <div class="bar-fallback" id="scoreFallback"></div>
+        </div>
+    </article>
+
+    <article class="panel compact">
+        <div class="section-heading">
+            <h2>Top Missing Skills</h2>
+            <span>{{ dashboard_data["top_missing_skills"]|length }}</span>
+        </div>
+        <div class="rank-list">
+            {% for skill, count in dashboard_data["top_missing_skills"] %}
+                <div class="rank-row">
+                    <span>{{ skill }}</span>
+                    <strong>{{ count }}</strong>
+                </div>
+            {% else %}
+                <p class="muted">No missing skill data yet.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel compact">
+        <div class="section-heading">
+            <h2>Job Trends</h2>
+            <span>{{ dashboard_data["job_trends"]|length }}</span>
+        </div>
+        <div class="tag-cloud">
+            {% for trend, count in dashboard_data["job_trends"] %}
+                <span>{{ trend }} <b>{{ count }}</b></span>
+            {% else %}
+                <p class="muted">Analyze a resume to populate trends.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="panel compact">
+    <div class="section-heading">
+        <h2>Previous Resume Reports</h2>
+        <a href="{{ url_for('compare') }}">Compare resumes</a>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Resume</th>
+                    <th>Score</th>
+                    <th>Rank</th>
+                    <th>Companies</th>
+                    <th>Date</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                    <tr>
+                        <td>{{ report["resume_name"] }}</td>
+                        <td><span class="mini-score">{{ report["score"] }}%</span></td>
+                        <td>{{ report["rank_label"] }}</td>
+                        <td>{{ report["target_companies"] or "Not set" }}</td>
+                        <td>{{ report["created_label"] }}</td>
+                        <td class="actions-cell">
+                            <a href="{{ url_for('home', report_id=report['id']) }}">Open</a>
+                            <a href="{{ url_for('download_report', report_id=report['id']) }}">PDF</a>
+                            <a href="{{ url_for('download_improved_resume', report_id=report['id']) }}">Improved</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="muted">No reports yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.dashboardData = {{ dashboard_data|tojson }};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/resume_library.js') }}"></script>
+{% endblock %}

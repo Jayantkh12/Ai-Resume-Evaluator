@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Compare Resumes | AI Resume Evaluator{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div>
+        <p class="eyebrow">Ranking</p>
+        <h1>Compare Candidate Resumes</h1>
+    </div>
+    <a class="ghost-button" href="{{ url_for('dashboard') }}">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19V9m7 10V5m7 14v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Dashboard
+    </a>
+</header>
+
+<form class="panel compare-form" method="post" enctype="multipart/form-data">
+    <div class="form-row">
+        <label for="compare-jd">Job Description</label>
+        <textarea id="compare-jd" name="jd" required>{{ request.form.get("jd", "") }}</textarea>
+    </div>
+    <div class="form-row">
+        <label for="compare-companies">Target Companies</label>
+        <input id="compare-companies" name="target_companies" type="text" value="{{ request.form.get('target_companies', '') }}" placeholder="Infosys, Zoho, Amazon" />
+    </div>
+    <div class="form-row">
+        <label>Saved Resumes</label>
+        <div class="saved-resume-picker">
+            {% for resume in resumes %}
+                <label class="check-row">
+                    <input type="checkbox" name="resume_ids" value="{{ resume['id'] }}" {% if resume['id'] in selected_ids %}checked{% endif %} />
+                    <span>
+                        <strong>{{ resume["resume_name"] }}</strong>
+                        <small>{{ resume["score_label"] }} &middot; {{ resume["status"] }}</small>
+                    </span>
+                </label>
+            {% else %}
+                <p class="muted">No saved resumes yet. Upload files below.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="compare-resumes">Add New Resumes</label>
+        <label class="dropzone library-dropzone" data-file-dropzone for="compare-resumes">
+            <input id="compare-resumes" name="resumes" type="file" multiple accept=".pdf,.docx,.txt,application/pdf" />
+            <span class="dropzone-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0 4 4m-4-4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 16.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <span>
+                <strong data-file-name>Drop resumes here</strong>
+                <small>Select or drag multiple PDF/DOCX/TXT files.</small>
+            </span>
+        </label>
+    </div>
+    <button class="primary-button fit" type="submit">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 5h10M7 12h10M7 19h10M4 5h.01M4 12h.01M4 19h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Rank Resumes
+    </button>
+</form>
+
+{% if results %}
+<section class="ranking-stack">
+    {% for result in results %}
+        {% if result.error %}
+            <article class="panel compact error-card">
+                <h2>{{ result.resume_name }}</h2>
+                <p>{{ result.error }}</p>
+            </article>
+        {% else %}
+            <article class="panel ranking-card">
+                <div class="ranking-score">
+                    <span class="mini-score large">{{ result.match_percentage }}%</span>
+                    <strong>{{ loop.index }}</strong>
+                </div>
+                <div class="ranking-body">
+                    <div class="section-heading">
+                        <div>
+                            <h2>{{ result.resume_name }}</h2>
+                            <span>{{ result.rank_label }}</span>
+                        </div>
+                        <a href="{{ url_for('home', report_id=result.report_id) }}">Open report</a>
+                    </div>
+                    <p>{{ result.summary }}</p>
+                    <div class="metric-grid mini-breakdown">
+                        {% for label, score in result.score_breakdown.items() %}
+                            <div class="metric-card">
+                                <span>{{ label }}</span>
+                                <strong>{{ score }}%</strong>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="two-column">
+                        <div>
+                            <h3>Missing</h3>
+                            <div class="tag-cloud small">
+                                {% for keyword in result.missing_keywords[:8] %}
+                                    <span>{{ keyword }}</span>
+                                {% else %}
+                                    <span>No major gaps</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div>
+                            <h3>Matched</h3>
+                            <div class="tag-cloud small">
+                                {% for keyword in result.matched_keywords[:8] %}
+                                    <span>{{ keyword }}</span>
+                                {% else %}
+                                    <span>No keyword matches</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        {% endif %}
+    {% endfor %}
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/resume_library.js') }}"></script>
+{% endblock %}

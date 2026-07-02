@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}AI Resume Evaluator{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+</head>
+<body class="{{ 'auth-page' if request.endpoint == 'login' else '' }}">
+    <div class="shell {{ 'auth-shell' if request.endpoint == 'login' else '' }}">
+        <aside class="sidebar">
+            <a class="brand" href="{{ url_for('home') if current_user else url_for('login') }}">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+                        <path d="M8 7h8M8 11h8M8 15h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M6 3h9l3 3v15H6V3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <span>
+                    <strong>AI Resume Evaluator</strong>
+                    <small>ATS Workspace</small>
+                </span>
+            </a>
+
+            {% if current_user %}
+                <nav class="nav-links" aria-label="Primary">
+                    <a href="{{ url_for('home') }}" class="{{ 'active' if request.endpoint == 'home' else '' }}">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        Analyze
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19V9m7 10V5m7 14v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        Dashboard
+                    </a>
+                    <a href="{{ url_for('compare') }}" class="{{ 'active' if request.endpoint == 'compare' else '' }}">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 5h10M7 12h10M7 19h10M4 5h.01M4 12h.01M4 19h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        Compare
+                    </a>
+                </nav>
+                <div class="user-box">
+                    <span>{{ current_user["name"] }}</span>
+                    <a href="{{ url_for('logout') }}">Logout</a>
+                </div>
+            {% elif request.endpoint == 'login' %}
+                <nav class="auth-side-nav" aria-label="Account">
+                    <a class="active" href="#login-form">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Login
+                    </a>
+                    <a href="#signup-form">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M22 11h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Create Account
+                    </a>
+                </nav>
+
+                <div class="security-card">
+                    <div class="shield-art" aria-hidden="true">
+                        <svg viewBox="0 0 64 64" fill="none">
+                            <path d="M32 6 52 13v16c0 14-8.8 23.7-20 29-11.2-5.3-20-15-20-29V13l20-7Z" fill="#1d4ed8"/>
+                            <path d="M32 14 45 19v10c0 8.8-5.3 15.3-13 19-7.7-3.7-13-10.2-13-19V19l13-5Z" fill="#60a5fa"/>
+                            <path d="m28 31 3 3 6-7" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <strong>Your data is secure</strong>
+                    <p>We use encrypted storage to keep your resume reports private.</p>
+                </div>
+
+                <div class="auth-feature-list">
+                    <div>
+                        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h7l4 4v14H7V3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 3v5h5M9 13h6M9 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                        <p><strong>Smart Analysis</strong><small>AI-powered ATS scoring and insights</small></p>
+                    </div>
+                    <div>
+                        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M17.5 19H7a5 5 0 1 1 1.2-9.85A6 6 0 0 1 20 11.5 3.75 3.75 0 0 1 17.5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                        <p><strong>Access Anywhere</strong><small>Use on any device, anytime</small></p>
+                    </div>
+                    <div>
+                        <span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5M8 17l4-4 3 3 5-7M8 17H4m16-8V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                        <p><strong>Track Progress</strong><small>Monitor score history and improvements</small></p>
+                    </div>
+                </div>
+
+                <div class="support-box">
+                    <div>
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2M6 14h2v5H6a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2Zm10 0h2a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-2v-5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                        <strong>Need help?</strong>
+                    </div>
+                    <a href="mailto:support@example.com">Contact Support <span>&rarr;</span></a>
+                </div>
+            {% else %}
+                <div class="guest-note">Login to save reports and compare resumes.</div>
+            {% endif %}
+        </aside>
+
+        <main class="main {{ 'auth-main' if request.endpoint == 'login' else '' }}">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
