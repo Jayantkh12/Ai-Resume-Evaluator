@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Resume Evaluator</title>
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --panel: #ffffff;
+            --ink: #111827;
+            --muted: #6b7280;
+            --line: #e5e7eb;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --green: #059669;
+            --red: #dc2626;
+            --amber: #d97706;
+            --teal: #0f766e;
+            --shadow: 0 18px 45px rgba(17, 24, 39, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent 35%),
+                linear-gradient(315deg, rgba(15, 118, 110, 0.08), transparent 30%),
+                var(--bg);
+            color: var(--ink);
+            font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+
+        .app {
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 28px 0;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-mark {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: var(--ink);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .brand h1 {
+            font-size: clamp(1.45rem, 3vw, 2.15rem);
+            line-height: 1.1;
+            letter-spacing: 0;
+        }
+
+        .brand p {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.96rem;
+        }
+
+        .status-pill {
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.72);
+            padding: 10px 14px;
+            border-radius: 999px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(330px, 0.85fr) minmax(420px, 1.15fr);
+            gap: 22px;
+            align-items: start;
+        }
+
+        .input-pane {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 22px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .section-title h2 {
+            font-size: 1.05rem;
+        }
+
+        .section-title p {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-top: 3px;
+        }
+
+        .icon-box {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .field {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 0.93rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 230px;
+            resize: vertical;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 14px;
+            color: var(--ink);
+            background: #fbfdff;
+            font: inherit;
+            line-height: 1.55;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+        }
+
+        .dropzone {
+            position: relative;
+            min-height: 132px;
+            border: 1.5px dashed #b8c2d6;
+            border-radius: 8px;
+            background: #fbfdff;
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s, transform 0.2s;
+        }
+
+        .dropzone:hover,
+        .dropzone.is-dragging {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .dropzone input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-copy {
+            display: grid;
+            gap: 8px;
+            justify-items: center;
+            pointer-events: none;
+        }
+
+        .upload-copy strong {
+            font-size: 0.98rem;
+        }
+
+        .upload-copy span {
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+
+        .alert {
+            display: none;
+            margin-bottom: 16px;
+            border: 1px solid #fecaca;
+            background: #fff1f2;
+            color: #991b1b;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 0.92rem;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            height: 48px;
+            border: 0;
+            border-radius: 8px;
+            background: var(--primary);
+            color: #ffffff;
+            font: inherit;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .analyze-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .analyze-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.72;
+            transform: none;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.45);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            display: none;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .analyze-btn.loading .spinner {
+            display: block;
+        }
+
+        .output-pane {
+            display: grid;
+            gap: 16px;
+        }
+
+        .result-hero,
+        .result-card,
+        .placeholder {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .placeholder {
+            min-height: 480px;
+            display: grid;
+            place-items: center;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .placeholder svg {
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+
+        .placeholder h2 {
+            font-size: 1.35rem;
+            margin-bottom: 8px;
+        }
+
+        .placeholder p {
+            color: var(--muted);
+            max-width: 440px;
+            line-height: 1.6;
+        }
+
+        .results {
+            display: none;
+            gap: 16px;
+        }
+
+        .results.show {
+            display: grid;
+        }
+
+        .result-hero {
+            display: grid;
+            grid-template-columns: 190px 1fr;
+            gap: 20px;
+            align-items: center;
+            padding: 22px;
+        }
+
+        .score-ring {
+            --score-color: var(--primary);
+            width: 160px;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: conic-gradient(var(--score-color) 0deg, #e5e7eb 0deg);
+            position: relative;
+        }
+
+        .score-ring::after {
+            content: "";
+            position: absolute;
+            width: 118px;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: #ffffff;
+        }
+
+        .score-value {
+            position: relative;
+            z-index: 1;
+            font-size: 2rem;
+            font-weight: 900;
+        }
+
+        .verdict h2 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+        }
+
+        .verdict p {
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        .meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .meta {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 8px 11px;
+            color: var(--muted);
+            font-size: 0.86rem;
+            background: #fbfdff;
+        }
+
+        .insight-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .result-card {
+            padding: 18px;
+            min-height: 230px;
+        }
+
+        .result-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 1rem;
+            margin-bottom: 14px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot.red {
+            background: var(--red);
+        }
+
+        .dot.green {
+            background: var(--green);
+        }
+
+        .dot.amber {
+            background: var(--amber);
+        }
+
+        ul {
+            list-style: none;
+            display: grid;
+            gap: 10px;
+        }
+
+        li {
+            color: #374151;
+            line-height: 1.45;
+            font-size: 0.92rem;
+            padding-left: 18px;
+            position: relative;
+        }
+
+        li::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #9ca3af;
+            position: absolute;
+            left: 0;
+            top: 0.55em;
+        }
+
+        .keywords li::before {
+            background: var(--red);
+        }
+
+        .strengths li::before {
+            background: var(--green);
+        }
+
+        .weaknesses li::before {
+            background: var(--amber);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 940px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .result-hero {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                text-align: center;
+            }
+
+            .meta-row {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .app {
+                width: min(100% - 22px, 1180px);
+                padding: 18px 0;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .status-pill {
+                white-space: normal;
+            }
+
+            .input-pane,
+            .result-hero,
+            .result-card {
+                padding: 16px;
+            }
+
+            .insight-grid {
+                grid-template-columns: 1fr;
+            }
+
+            textarea {
+                min-height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">
+                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+                        <path d="M8 7h8M8 11h8M8 15h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M6 3h9l3 3v15H6V3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>AI Resume Evaluator</h1>
+                    <p>Compare a resume against a job description with an ATS-style review.</p>
+                </div>
+            </div>
+            <div class="status-pill">PDF resume analysis</div>
+        </header>
+
+        <section class="workspace">
+            <form class="input-pane" id="resume-form">
+                <div class="section-title">
+                    <div class="icon-box" aria-hidden="true">
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2>Resume Match Input</h2>
+                        <p>Paste the role requirements and upload one resume.</p>
+                    </div>
+                </div>
+
+                <div class="alert" id="alert-box"></div>
+
+                <div class="field">
+                    <label for="job-description">Job Description</label>
+                    <textarea id="job-description" name="jd" placeholder="Paste the full job description here..." required></textarea>
+                </div>
+
+                <div class="field">
+                    <label for="resume-file">Resume File</label>
+                    <div class="dropzone" id="dropzone">
+                        <input type="file" id="resume-file" name="resume" accept=".pdf,application/pdf" required />
+                        <div class="upload-copy">
+                            <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M12 16V4m0 0 4 4m-4-4-4 4" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M20 16.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <strong>Drop your PDF resume here</strong>
+                            <span>or click to browse from your device</span>
+                        </div>
+                    </div>
+                    <div class="file-name" id="file-name"></div>
+                </div>
+
+                <button class="analyze-btn" id="analyze-btn" type="submit">
+                    <span class="spinner" aria-hidden="true"></span>
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span id="button-text">Analyze Resume</span>
+                </button>
+            </form>
+
+            <section class="output-pane" aria-live="polite">
+                <div class="placeholder" id="placeholder">
+                    <div>
+                        <svg width="58" height="58" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M9 11h6M9 15h4M7 3h7l3 3v15H7V3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 3v4h4" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        </svg>
+                        <h2>Your analysis will appear here</h2>
+                        <p>The result includes a match score, missing keywords, strengths, weaknesses, and a final hiring-readiness verdict.</p>
+                    </div>
+                </div>
+
+                <div class="results" id="results-area">
+                    <div class="result-hero">
+                        <div class="score-ring" id="score-ring">
+                            <div class="score-value" id="score-display">0%</div>
+                        </div>
+                        <div class="verdict">
+                            <h2>Final Verdict</h2>
+                            <p id="verdict-text"></p>
+                            <div class="meta-row">
+                                <span class="meta" id="keyword-count">0 missing keywords</span>
+                                <span class="meta" id="strength-count">0 strengths</span>
+                                <span class="meta" id="weakness-count">0 weaknesses</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insight-grid">
+                        <article class="result-card">
+                            <h3><span class="dot red"></span> Missing Keywords</h3>
+                            <ul class="keywords" id="missing-keywords-list"></ul>
+                        </article>
+
+                        <article class="result-card">
+                            <h3><span class="dot green"></span> Strengths</h3>
+                            <ul class="strengths" id="strengths-list"></ul>
+                        </article>
+
+                        <article class="result-card">
+                            <h3><span class="dot amber"></span> Weaknesses</h3>
+                            <ul class="weaknesses" id="weaknesses-list"></ul>
+                        </article>
+                    </div>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        const form = document.getElementById("resume-form");
+        const fileInput = document.getElementById("resume-file");
+        const fileName = document.getElementById("file-name");
+        const dropzone = document.getElementById("dropzone");
+        const alertBox = document.getElementById("alert-box");
+        const analyzeBtn = document.getElementById("analyze-btn");
+        const buttonText = document.getElementById("button-text");
+        const placeholder = document.getElementById("placeholder");
+        const resultsArea = document.getElementById("results-area");
+
+        const scoreRing = document.getElementById("score-ring");
+        const scoreDisplay = document.getElementById("score-display");
+        const verdictText = document.getElementById("verdict-text");
+        const keywordCount = document.getElementById("keyword-count");
+        const strengthCount = document.getElementById("strength-count");
+        const weaknessCount = document.getElementById("weakness-count");
+
+        const missingList = document.getElementById("missing-keywords-list");
+        const strengthsList = document.getElementById("strengths-list");
+        const weaknessesList = document.getElementById("weaknesses-list");
+
+        fileInput.addEventListener("change", updateFileName);
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+            dropzone.addEventListener(eventName, (event) => {
+                event.preventDefault();
+                dropzone.classList.add("is-dragging");
+            });
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+            dropzone.addEventListener(eventName, (event) => {
+                event.preventDefault();
+                dropzone.classList.remove("is-dragging");
+            });
+        });
+
+        dropzone.addEventListener("drop", (event) => {
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFileName();
+            }
+        });
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const jdText = document.getElementById("job-description").value.trim();
+            const file = fileInput.files[0];
+
+            hideAlert();
+
+            if (!jdText) {
+                showAlert("Please paste the job description before analyzing.");
+                return;
+            }
+
+            if (!file) {
+                showAlert("Please upload a PDF resume.");
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith(".pdf")) {
+                showAlert("Only PDF resumes are supported by the current backend.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("jd", jdText);
+            formData.append("resume", file);
+
+            setLoading(true);
+
+            try {
+                const response = await fetch("/analyze", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.error) {
+                    throw new Error(data.error || "Unable to analyze this resume.");
+                }
+
+                displayResults(data);
+            } catch (error) {
+                showAlert(error.message || "An unexpected error occurred while analyzing the resume.");
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function updateFileName() {
+            const file = fileInput.files[0];
+            fileName.textContent = file ? `Selected: ${file.name}` : "";
+        }
+
+        function setLoading(isLoading) {
+            analyzeBtn.disabled = isLoading;
+            analyzeBtn.classList.toggle("loading", isLoading);
+            buttonText.textContent = isLoading ? "Analyzing..." : "Analyze Resume";
+        }
+
+        function showAlert(message) {
+            alertBox.textContent = message;
+            alertBox.classList.add("show");
+        }
+
+        function hideAlert() {
+            alertBox.textContent = "";
+            alertBox.classList.remove("show");
+        }
+
+        function displayResults(data) {
+            const score = clamp(Number(data.match_percentage) || 0, 0, 100);
+            const scoreColor = getScoreColor(score);
+
+            placeholder.style.display = "none";
+            resultsArea.classList.add("show");
+
+            scoreDisplay.textContent = `${score}%`;
+            scoreRing.style.setProperty("--score-color", scoreColor);
+            scoreRing.style.background = `conic-gradient(${scoreColor} ${score * 3.6}deg, #e5e7eb 0deg)`;
+
+            const missing = normalizeList(data.missing_keywords);
+            const strengths = normalizeList(data.strengths);
+            const weaknesses = normalizeList(data.weaknesses);
+
+            verdictText.textContent = data.final_verdict || "No verdict returned.";
+            keywordCount.textContent = `${missing.length} missing keyword${missing.length === 1 ? "" : "s"}`;
+            strengthCount.textContent = `${strengths.length} strength${strengths.length === 1 ? "" : "s"}`;
+            weaknessCount.textContent = `${weaknesses.length} weakness${weaknesses.length === 1 ? "" : "es"}`;
+
+            renderList(missingList, missing, "No missing keywords returned.");
+            renderList(strengthsList, strengths, "No strengths returned.");
+            renderList(weaknessesList, weaknesses, "No weaknesses returned.");
+        }
+
+        function normalizeList(value) {
+            return Array.isArray(value)
+                ? value.filter((item) => String(item).trim()).map((item) => String(item).trim())
+                : [];
+        }
+
+        function renderList(element, items, emptyText) {
+            element.innerHTML = "";
+
+            const finalItems = items.length ? items : [emptyText];
+
+            finalItems.forEach((item) => {
+                const li = document.createElement("li");
+                li.textContent = item;
+                element.appendChild(li);
+            });
+        }
+
+        function getScoreColor(score) {
+            if (score >= 75) return "#059669";
+            if (score >= 50) return "#d97706";
+            return "#dc2626";
+        }
+
+        function clamp(value, min, max) {
+            return Math.min(Math.max(value, min), max);
+        }
+    </script>
+</body>
+</html>
